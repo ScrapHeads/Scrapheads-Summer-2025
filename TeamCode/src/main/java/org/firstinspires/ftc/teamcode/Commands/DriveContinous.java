@@ -5,7 +5,7 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.command.CommandBase;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 
-import org.firstinspires.ftc.teamcode.Subsystems.Drivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
 public class DriveContinous extends CommandBase {
     private Drivetrain drivetrain;
