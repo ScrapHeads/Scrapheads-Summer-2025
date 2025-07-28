@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
 import static org.firstinspires.ftc.teamcode.Constants.dashboard;
+import static org.firstinspires.ftc.teamcode.Constants.hm;
 
 import androidx.annotation.NonNull;
 
@@ -45,12 +46,14 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.Localizer;
+import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
+import org.firstinspires.ftc.teamcode.Roadrunner.PinpointLocalizer;
 import org.firstinspires.ftc.teamcode.messages.DriveCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumLocalizerInputsMessage;
 import org.firstinspires.ftc.teamcode.messages.PoseMessage;
 import org.firstinspires.ftc.teamcode.Drawing;
-import org.firstinspires.ftc.teamcode.util.TwoDeadWheelLocalizer;
+import org.firstinspires.ftc.teamcode.Roadrunner.TwoDeadWheelLocalizer;
 
 import java.lang.Math;
 import java.util.Arrays;
@@ -104,11 +107,13 @@ public final class Drivetrain implements Subsystem {
 
     public final TurnConstraints defaultTurnConstraints = new TurnConstraints(
             PARAMS.maxAngVel, -PARAMS.maxAngAccel, PARAMS.maxAngAccel);
+
     public final VelConstraint defaultVelConstraint =
             new MinVelConstraint(Arrays.asList(
                     kinematics.new WheelVelConstraint(PARAMS.maxWheelVel),
                     new AngularVelConstraint(PARAMS.maxAngVel)
             ));
+
     public final AccelConstraint defaultAccelConstraint =
             new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
 
@@ -119,7 +124,7 @@ public final class Drivetrain implements Subsystem {
     public final LazyImu lazyImu;
 
     public final Localizer localizer;
-    public Pose2d pose;
+
 
     private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
 
@@ -135,8 +140,9 @@ public final class Drivetrain implements Subsystem {
         private int lastLeftFrontPos, lastLeftBackPos, lastRightBackPos, lastRightFrontPos;
         private Rotation2d lastHeading;
         private boolean initialized;
+        private Pose2d pose;
 
-        public DriveLocalizer() {
+        public DriveLocalizer(Pose2d pose) {
             leftFront = new OverflowEncoder(new RawEncoder(Drivetrain.this.leftFront));
             leftBack = new OverflowEncoder(new RawEncoder(Drivetrain.this.leftBack));
             rightBack = new OverflowEncoder(new RawEncoder(Drivetrain.this.rightBack));
@@ -146,10 +152,22 @@ public final class Drivetrain implements Subsystem {
 
             // TODO: reverse encoders if needed
             //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+
+            this.pose = pose;
         }
 
         @Override
-        public Twist2dDual<Time> update() {
+        public void setPose(Pose2d pose) {
+            this.pose = pose;
+        }
+
+        @Override
+        public Pose2d getPose() {
+            return pose;
+        }
+
+        @Override
+        public PoseVelocity2d update() {
             PositionVelocityPair leftFrontPosVel = leftFront.getPositionAndVelocity();
             PositionVelocityPair leftBackPosVel = leftBack.getPositionAndVelocity();
             PositionVelocityPair rightBackPosVel = rightBack.getPositionAndVelocity();
@@ -172,10 +190,7 @@ public final class Drivetrain implements Subsystem {
 
                 lastHeading = heading;
 
-                return new Twist2dDual<>(
-                        Vector2dDual.constant(new Vector2d(0.0, 0.0), 2),
-                        DualNum.constant(0.0, 2)
-                );
+                return new PoseVelocity2d(new Vector2d(0.0, 0.0), 0.0);
             }
 
             double headingDelta = heading.minus(lastHeading);
@@ -205,16 +220,16 @@ public final class Drivetrain implements Subsystem {
 
             lastHeading = heading;
 
-            return new Twist2dDual<>(
-                    twist.line,
-                    DualNum.cons(headingDelta, twist.angle.drop(1))
-            );
+            pose = pose.plus(new Twist2d(
+                    twist.line.value(),
+                    headingDelta
+            ));
+
+            return twist.velocity().value();
         }
     }
 
     public Drivetrain(HardwareMap hardwareMap, Pose2d pose) {
-        this.pose = pose;
-
         LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
@@ -244,7 +259,7 @@ public final class Drivetrain implements Subsystem {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new TwoDeadWheelLocalizer(hardwareMap, lazyImu.get(), PARAMS.inPerTick);
+        localizer = new PinpointLocalizer(hm, PARAMS.inPerTick, pose);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
@@ -313,7 +328,7 @@ public final class Drivetrain implements Subsystem {
                     PARAMS.axialGain, PARAMS.lateralGain, PARAMS.headingGain,
                     PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
             )
-                    .compute(txWorldTarget, pose, robotVelRobot);
+                    .compute(txWorldTarget, localizer.getPose(), robotVelRobot);
             driveCommandWriter.write(new DriveCommandMessage(command));
 
             MecanumKinematics.WheelVelocities<Time> wheelVels = kinematics.inverse(command);
@@ -334,11 +349,11 @@ public final class Drivetrain implements Subsystem {
             rightBack.setPower(rightBackPower);
             rightFront.setPower(rightFrontPower);
 
-            p.put("x", pose.position.x);
-            p.put("y", pose.position.y);
-            p.put("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
+            p.put("x", localizer.getPose().position.x);
+            p.put("y", localizer.getPose().position.y);
+            p.put("heading (deg)", Math.toDegrees(localizer.getPose().heading.toDouble()));
 
-            Pose2d error = txWorldTarget.value().minusExp(pose);
+            Pose2d error = txWorldTarget.value().minusExp(localizer.getPose());
             p.put("xError", error.position.x);
             p.put("yError", error.position.y);
             p.put("headingError (deg)", Math.toDegrees(error.heading.toDouble()));
@@ -351,7 +366,7 @@ public final class Drivetrain implements Subsystem {
             Drawing.drawRobot(c, txWorldTarget.value());
 
             c.setStroke("#3F51B5");
-            Drawing.drawRobot(c, pose);
+            Drawing.drawRobot(c, localizer.getPose());
 
             c.setStroke("#4CAF50FF");
             c.setStrokeWidth(1);
@@ -405,7 +420,7 @@ public final class Drivetrain implements Subsystem {
                     PARAMS.axialGain, PARAMS.lateralGain, PARAMS.headingGain,
                     PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
             )
-                    .compute(txWorldTarget, pose, robotVelRobot);
+                    .compute(txWorldTarget, localizer.getPose(), robotVelRobot);
             driveCommandWriter.write(new DriveCommandMessage(command));
 
             MecanumKinematics.WheelVelocities<Time> wheelVels = kinematics.inverse(command);
@@ -432,7 +447,7 @@ public final class Drivetrain implements Subsystem {
             Drawing.drawRobot(c, txWorldTarget.value());
 
             c.setStroke("#3F51B5");
-            Drawing.drawRobot(c, pose);
+            Drawing.drawRobot(c, localizer.getPose());
 
             c.setStroke("#7C4DFFFF");
             c.fillCircle(turn.beginPose.position.x, turn.beginPose.position.y, 2);
@@ -448,17 +463,16 @@ public final class Drivetrain implements Subsystem {
     }
 
     public PoseVelocity2d updatePoseEstimate() {
-        Twist2dDual<Time> twist = localizer.update();
-        pose = pose.plus(twist.value());
+        PoseVelocity2d vel = localizer.update();
+        poseHistory.add(localizer.getPose());
 
-        poseHistory.add(pose);
         while (poseHistory.size() > 100) {
             poseHistory.removeFirst();
         }
 
-        estimatedPoseWriter.write(new PoseMessage(pose));
+        estimatedPoseWriter.write(new PoseMessage(localizer.getPose()));
 
-        return twist.velocity().value();
+        return vel;
     }
 
     private void drawPoseHistory(Canvas c) {
@@ -515,14 +529,14 @@ public final class Drivetrain implements Subsystem {
         PoseVelocity2d vel = updatePoseEstimate();
 
         TelemetryPacket packet = new TelemetryPacket();
-        packet.put("X", pose.position.x);
-        packet.put("Y", pose.position.y);
-        packet.put("rot", pose.heading.toDouble());
+        packet.put("X", localizer.getPose().position.x);
+        packet.put("Y", localizer.getPose().position.y);
+        packet.put("rot", localizer.getPose().heading.toDouble());
         packet.put("xVel", vel.linearVel.x);
         packet.put("yVel", vel.linearVel.y);
         packet.put("rotVel", vel.angVel);
 
-        Drawing.drawRobot(packet.fieldOverlay(), pose);
+        Drawing.drawRobot(packet.fieldOverlay(), localizer.getPose());
 
         dashboard.sendTelemetryPacket(packet);
     }
