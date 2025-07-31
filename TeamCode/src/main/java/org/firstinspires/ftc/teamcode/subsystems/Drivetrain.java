@@ -70,7 +70,7 @@ public final class Drivetrain implements Subsystem {
                 RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
 
         // drive model parameters
-        public double inPerTick = 0.0019596720167;
+        public double inPerTick = 0.0019758748077;
         public double lateralInPerTick = 0.0012812394936273913;
         public double trackWidthTicks = 7326.632937382931;
 
@@ -257,7 +257,7 @@ public final class Drivetrain implements Subsystem {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new PinpointLocalizer(hm, PARAMS.inPerTick, pose);
+        localizer = new PinpointLocalizer(hardwareMap, PARAMS.inPerTick, pose);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
