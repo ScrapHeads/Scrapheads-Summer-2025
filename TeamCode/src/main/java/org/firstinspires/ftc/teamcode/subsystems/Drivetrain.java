@@ -71,12 +71,12 @@ public final class Drivetrain implements Subsystem {
 
         // drive model parameters
         public double inPerTick = 0.0019758748077;
-        public double lateralInPerTick = 0.0012812394936273913;
+        public double lateralInPerTick = 0.0011304592218883366;
         public double trackWidthTicks = 7326.632937382931;
 
         // feedforward parameters (in tick units)
-        public double kS = 1.0602970460264904;
-        public double kV = 0.00029320568752367834;
+        public double kS = 1.0083012211545923;
+        public double kV = -0.0002798938977658563;
         public double kA = 0.000067;
 
         // path profile parameters (in inches)
@@ -253,7 +253,7 @@ public final class Drivetrain implements Subsystem {
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         lazyImu = new LazyHardwareMapImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
-                PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
+               PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 

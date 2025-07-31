@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.teleops;
 
-import static org.firstinspires.ftc.teamcode.Constants.*;
+import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.*;
+import static org.firstinspires.ftc.teamcode.Constants.dashboard;
+import static org.firstinspires.ftc.teamcode.Constants.hm;
+import static org.firstinspires.ftc.teamcode.Constants.tele;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -13,12 +16,10 @@ import org.firstinspires.ftc.teamcode.Commands.VisionDetection;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 
-@TeleOp(name = "DriveOnly", group = "ScrapHeads")
-public class DriveOnly extends CommandOpMode {
+@TeleOp(name = "VisionOnly", group = "ScrapHeads")
+public class VisionOnly extends CommandOpMode {
     // Create all subsystems references
     GamepadEx driver = null;
-
-    Drivetrain drivetrain = null;
 
     Vision vision = null;
 
@@ -33,10 +34,6 @@ public class DriveOnly extends CommandOpMode {
         // Can only have one active DRIVETRAIN controller at once
         driver = new GamepadEx(gamepad1);
 
-        // Initialize the subsystems declared at the top of the code
-        drivetrain = new Drivetrain(hm, new Pose2d(0,0,0));
-        drivetrain.register();
-
         vision = new Vision();
         vision.register();
 
@@ -45,7 +42,7 @@ public class DriveOnly extends CommandOpMode {
     }
 
     public void assignControls() {
-        drivetrain.setDefaultCommand(new DriveContinous(drivetrain, driver, 1));
+        driver.getGamepadButton(A)
+                .whenPressed(new VisionDetection(vision));
     }
-
 }

@@ -58,9 +58,9 @@ import java.util.concurrent.TimeUnit;
  * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
-@TeleOp(name = "Vision", group = "Sensor")
+@TeleOp(name = "VisionTele", group = "Sensor")
 //@Disabled
-public class Vision extends LinearOpMode {
+public class VisionTele extends LinearOpMode {
 
     private final int READ_PERIOD = 1;
 
@@ -140,8 +140,15 @@ public class Vision extends LinearOpMode {
              */
             HuskyLens.Block[] blocks = huskyLens.blocks();
             telemetry.addData("Block count", blocks.length);
+            // For loop is set up as
+            // INITIALIZATION; CONDITION; INCREMENT
+            // Initialization: Runs once, at the very beginning
+            // CONDITION: Checked before every loop iteration
+            // INCREMENT: Runs after each loop iteration
             for (int i = 0; i < blocks.length; i++) {
                 telemetry.addData("Block", blocks[i].toString());
+                telemetry.addData("x", blocks[i].x );
+                telemetry.addData("y", blocks[i].y);
                 /*
                  * Here inside the FOR loop, you could save or evaluate specific info for the currently recognized Bounding Box:
                  * - blocks[i].width and blocks[i].height   (size of box, in pixels)
