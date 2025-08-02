@@ -13,7 +13,7 @@ public class VisionDetection extends CommandBase {
         addRequirements(vision);
     }
 
-//    public void initialize() {
-//
-//    }
+    public void initialize() {
+
+    }
 }

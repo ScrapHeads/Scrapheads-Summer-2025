@@ -77,7 +77,7 @@ public class Vision implements Subsystem {
 
     public void detectObject() {
         if (!rateLimit.hasExpired()) {
-            detectObject();
+            return;
         }
         rateLimit.reset();
 
