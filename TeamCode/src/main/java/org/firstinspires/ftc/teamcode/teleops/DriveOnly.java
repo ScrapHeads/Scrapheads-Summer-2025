@@ -37,8 +37,8 @@ public class DriveOnly extends CommandOpMode {
         drivetrain = new Drivetrain(hm, new Pose2d(0,0,0));
         drivetrain.register();
 
-        vision = new Vision();
-        vision.register();
+//        vision = new Vision();
+//        vision.register();
 
         // Calling assignControls to set input commands
         assignControls();
