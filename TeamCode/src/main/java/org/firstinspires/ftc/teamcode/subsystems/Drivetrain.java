@@ -528,7 +528,6 @@ public final class Drivetrain implements Subsystem {
         Pose2d pose = localizer.getPose();
 
         TelemetryPacket packet = new TelemetryPacket();
-        packet.put("pos", pose);
         packet.put("X", pose.position.x);
         packet.put("Y", pose.position.y);
         packet.put("rot", pose.heading.toDouble());
