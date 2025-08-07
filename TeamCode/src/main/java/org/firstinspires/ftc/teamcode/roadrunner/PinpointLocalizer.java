@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.roadrunner;
 
+import static org.firstinspires.ftc.teamcode.Constants.dashboard;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Rotation2d;
@@ -18,8 +21,8 @@ import java.util.Objects;
 @Config
 public final class PinpointLocalizer implements Localizer {
     public static class Params {
-        public double parYTicks = 2291.725042777106; // y position of the parallel encoder (in tick units)
-        public double perpXTicks = 530.0391220265324; // x position of the perpendicular encoder (in tick units)
+        public double parYTicks = 3100.5613445493536; // y position of the parallel encoder (in tick units)
+        public double perpXTicks = 2525.5670623453007; // x position of the perpendicular encoder (in tick units)
     }
 
     public static Params PARAMS = new Params();
@@ -35,7 +38,8 @@ public final class PinpointLocalizer implements Localizer {
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         driver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
-        driver.setEncoderResolution(1 / inPerTick, DistanceUnit.INCH);
+        double resolution = (1/inPerTick)/25.4;
+        driver.setEncoderResolution(resolution, DistanceUnit.MM);
         driver.setOffsets(inPerTick * PARAMS.parYTicks, inPerTick * PARAMS.perpXTicks, DistanceUnit.INCH);
 
         // TODO: reverse encoder directions if needed

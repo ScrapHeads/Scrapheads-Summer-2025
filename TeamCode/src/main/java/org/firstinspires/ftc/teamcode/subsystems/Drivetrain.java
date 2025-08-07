@@ -71,13 +71,13 @@ public final class Drivetrain implements Subsystem {
 
         // drive model parameters
         public double inPerTick = 0.0019758748077;
-        public double lateralInPerTick = 0.0018340052255617003;
-        public double trackWidthTicks = 6624.438598947833;
+        public double lateralInPerTick = 0.001780265798028222;
+        public double trackWidthTicks = 6568.141653045166;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.7483408212704403;
-        public double kV =  0.00028603221729347735;
-        public double kA = 0.000067;
+        public double kS = 0.8236622166065146;
+        public double kV =  0.0002892898543616122;
+        public double kA = .000078;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 60;
@@ -524,12 +524,11 @@ public final class Drivetrain implements Subsystem {
 
     @Override
     public void periodic() {
-        FlightRecorder.write("ESTIMATED_POSE", new PoseMessage(localizer.getPose()));
-
         PoseVelocity2d vel = updatePoseEstimate();
         Pose2d pose = localizer.getPose();
 
         TelemetryPacket packet = new TelemetryPacket();
+        packet.put("pos", pose);
         packet.put("X", pose.position.x);
         packet.put("Y", pose.position.y);
         packet.put("rot", pose.heading.toDouble());
