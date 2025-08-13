@@ -39,7 +39,7 @@ public class MoveForward extends CommandOpMode {
     List<Pose2d> positions = Arrays.asList(
             new Pose2d(0, 0, 0),
             new Pose2d(10, 0, Math.toRadians(0)),
-            new Pose2d(10, 10, Math.toRadians(0))
+            new Pose2d(0, 0, Math.toRadians(0))
     );
 
     // Create a list of completed paths: call in order
@@ -64,17 +64,17 @@ public class MoveForward extends CommandOpMode {
                 new AngularVelConstraint(Math.PI)));
         AccelConstraint accelConstraintFast = new ProfileAccelConstraint(-40, 80);
 
-        TrajectoryActionBuilder turn180 = drivetrain.actionBuilder(positions.get(0))
-                .turnTo(Math.toRadians(180));
-        path.add(turn180.build());
+//        TrajectoryActionBuilder turn = drivetrain.actionBuilder(positions.get(0))
+//                .turn(Math.toRadians(180));
+//        path.add(turn.build());
 
         TrajectoryActionBuilder driveForward = drivetrain.actionBuilder(positions.get(0))
                 .strafeToLinearHeading(positions.get(1).position, positions.get(1).heading);
         path.add(driveForward.build());
 
-        TrajectoryActionBuilder driveSideWays = drivetrain.actionBuilder(positions.get(1))
-                .strafeToLinearHeading(positions.get(2).position, positions.get(2).heading);
-        path.add(driveSideWays.build());
+//        TrajectoryActionBuilder driveSideWays = drivetrain.actionBuilder(positions.get(1))
+//                .strafeToLinearHeading(positions.get(2).position, positions.get(2).heading);
+//        path.add(driveSideWays.build());
 
         followPath();
     }
@@ -83,7 +83,7 @@ public class MoveForward extends CommandOpMode {
         schedule(new SequentialCommandGroup(
                 new FollowDrivePath(drivetrain, path.get(0))
 
-                //new FollowDrivePath(drivetrain, path.get(1).build())
+//                new FollowDrivePath(drivetrain, path.get(1))
         ));
     }
 

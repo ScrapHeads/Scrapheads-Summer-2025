@@ -89,11 +89,11 @@ public final class Drivetrain implements Subsystem {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 5.0;
-        public double lateralGain = 5.0;
-        public double headingGain = 5.0; // shared with turn
+        public double axialGain = 7.9;
+        public double lateralGain = 7.0;
+        public double headingGain = 10.0; // shared with turn
 
-        public double axialVelGain = 0.0;
+        public double axialVelGain = 0.174;
         public double lateralVelGain = 0.0;
         public double headingVelGain = 0.0; // shared with turn
     }
@@ -497,7 +497,7 @@ public final class Drivetrain implements Subsystem {
                 new TrajectoryBuilderParams(
                         1e-6,
                         new ProfileParams(
-                                0.25, 0.1, 1e-2
+                                0.1, Math.toRadians(.5), .00005
                         )
                 ),
                 beginPose, 0.0,
@@ -513,7 +513,7 @@ public final class Drivetrain implements Subsystem {
                 new TrajectoryBuilderParams(
                         1e-6,
                         new ProfileParams(
-                                0.25, 0.1, 1e-2
+                                0.1, Math.toRadians(.5), .00005
                         )
                 ),
                 beginPose, 0.0,
@@ -530,7 +530,7 @@ public final class Drivetrain implements Subsystem {
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("X", pose.position.x);
         packet.put("Y", pose.position.y);
-        packet.put("rot", pose.heading.toDouble());
+        packet.put("rot", pose.heading.toDouble() * (180 / Math.PI));
         packet.put("xVel", vel.linearVel.x);
         packet.put("yVel", vel.linearVel.y);
         packet.put("rotVel", vel.angVel);
