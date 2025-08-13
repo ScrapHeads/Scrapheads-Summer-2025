@@ -71,13 +71,13 @@ public final class Drivetrain implements Subsystem {
 
         // drive model parameters
         public double inPerTick = 0.0019758748077;
-        public double lateralInPerTick = 0.0012812394936273913;
-        public double trackWidthTicks = 7326.632937382931;
+        public double lateralInPerTick = 0.001780265798028222;
+        public double trackWidthTicks = 6568.141653045166;
 
         // feedforward parameters (in tick units)
-        public double kS = 1.0602970460264904;
-        public double kV = 0.00029320568752367834;
-        public double kA = 0.000067;
+        public double kS = 0.8236622166065146;
+        public double kV =  0.0002892898543616122;
+        public double kA = .000078;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 60;
@@ -253,7 +253,7 @@ public final class Drivetrain implements Subsystem {
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         lazyImu = new LazyHardwareMapImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
-                PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
+               PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -525,11 +525,12 @@ public final class Drivetrain implements Subsystem {
     @Override
     public void periodic() {
         PoseVelocity2d vel = updatePoseEstimate();
+        Pose2d pose = localizer.getPose();
 
         TelemetryPacket packet = new TelemetryPacket();
-        packet.put("X", localizer.getPose().position.x);
-        packet.put("Y", localizer.getPose().position.y);
-        packet.put("rot", localizer.getPose().heading.toDouble());
+        packet.put("X", pose.position.x);
+        packet.put("Y", pose.position.y);
+        packet.put("rot", pose.heading.toDouble());
         packet.put("xVel", vel.linearVel.x);
         packet.put("yVel", vel.linearVel.y);
         packet.put("rotVel", vel.angVel);

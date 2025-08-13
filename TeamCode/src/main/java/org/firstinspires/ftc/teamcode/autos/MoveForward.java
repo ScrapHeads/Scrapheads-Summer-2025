@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.Constants.tele;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.AccelConstraint;
+import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.AngularVelConstraint;
 import com.acmerobotics.roadrunner.MinVelConstraint;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -23,6 +24,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,7 +43,7 @@ public class MoveForward extends CommandOpMode {
     );
 
     // Create a list of completed paths: call in order
-    List<TrajectoryActionBuilder> path = null;
+    List<Action> path = new ArrayList<>();
 
     @Override
     public void initialize() {
@@ -62,22 +64,26 @@ public class MoveForward extends CommandOpMode {
                 new AngularVelConstraint(Math.PI)));
         AccelConstraint accelConstraintFast = new ProfileAccelConstraint(-40, 80);
 
+        TrajectoryActionBuilder turn180 = drivetrain.actionBuilder(positions.get(0))
+                .turnTo(Math.toRadians(180));
+        path.add(turn180.build());
+
         TrajectoryActionBuilder driveForward = drivetrain.actionBuilder(positions.get(0))
                 .strafeToLinearHeading(positions.get(1).position, positions.get(1).heading);
-        path.add(driveForward);
+        path.add(driveForward.build());
 
         TrajectoryActionBuilder driveSideWays = drivetrain.actionBuilder(positions.get(1))
                 .strafeToLinearHeading(positions.get(2).position, positions.get(2).heading);
-        path.add(driveSideWays);
+        path.add(driveSideWays.build());
 
         followPath();
     }
 
     public void followPath() {
         schedule(new SequentialCommandGroup(
-                new FollowDrivePath(drivetrain, path.get(0).build()),
+                new FollowDrivePath(drivetrain, path.get(0))
 
-                new FollowDrivePath(drivetrain, path.get(1).build())
+                //new FollowDrivePath(drivetrain, path.get(1).build())
         ));
     }
 
