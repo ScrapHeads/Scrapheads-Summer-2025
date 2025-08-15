@@ -45,7 +45,6 @@ public final class PinpointLocalizer implements Localizer {
         // TODO: reverse encoder directions if needed
         initialParDirection = GoBildaPinpointDriver.EncoderDirection.REVERSED;
         initialPerpDirection = GoBildaPinpointDriver.EncoderDirection.REVERSED;
-        // kV: -0.0002798938977658563, kS: 1.0083012211545923
         driver.setEncoderDirections(initialParDirection, initialPerpDirection);
 
         driver.resetPosAndIMU();

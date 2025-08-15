@@ -89,13 +89,17 @@ public final class Drivetrain implements Subsystem {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 7.9;
-        public double lateralGain = 7.0;
-        public double headingGain = 10.0; // shared with turn
+        public double axialGain = 8.8;
+        public double lateralGain = 17.0;
+        public double headingGain = 5.0; // shared with turn
 
-        public double axialVelGain = 0.174;
-        public double lateralVelGain = 0.0;
+        public double axialVelGain = 0.345;
+        public double lateralVelGain = 0.3;
         public double headingVelGain = 0.0; // shared with turn
+
+        public double defaultPosTolerance = .1;
+        public double defaultHeadingTolerance = Math.toRadians(2);
+        public double defaultVelTolerance = .5;
     }
 
     public static Params PARAMS = new Params();
@@ -497,8 +501,25 @@ public final class Drivetrain implements Subsystem {
                 new TrajectoryBuilderParams(
                         1e-6,
                         new ProfileParams(
-                                0.1, Math.toRadians(.5), .00005
+                                PARAMS.defaultPosTolerance, PARAMS.defaultHeadingTolerance, PARAMS.defaultVelTolerance
                         )
+                ),
+                beginPose, 0.0,
+                defaultTurnConstraints,
+                defaultVelConstraint, defaultAccelConstraint
+        );
+    }
+
+    public TrajectoryActionBuilder actionBuilder(
+            Pose2d beginPose,
+            double posTol, double headingTol, double velTol
+    ) {
+        return new TrajectoryActionBuilder(
+                TurnAction::new,
+                FollowTrajectoryAction::new,
+                new TrajectoryBuilderParams(
+                        1e-6,
+                        new ProfileParams(posTol, headingTol, velTol)
                 ),
                 beginPose, 0.0,
                 defaultTurnConstraints,
@@ -515,6 +536,26 @@ public final class Drivetrain implements Subsystem {
                         new ProfileParams(
                                 0.1, Math.toRadians(.5), .00005
                         )
+                ),
+                beginPose, 0.0,
+                turnConstraints,
+                velConstraints, accelConstraint
+        );
+    }
+
+    public TrajectoryActionBuilder actionBuilder(
+            Pose2d beginPose,
+            TurnConstraints turnConstraints,
+            VelConstraint velConstraints,
+            AccelConstraint accelConstraint,
+            double posTol, double headingTol, double velTol
+    ) {
+        return new TrajectoryActionBuilder(
+                TurnAction::new,
+                FollowTrajectoryAction::new,
+                new TrajectoryBuilderParams(
+                        1e-6,
+                        new ProfileParams(posTol, headingTol, velTol)
                 ),
                 beginPose, 0.0,
                 turnConstraints,
