@@ -1,48 +1,66 @@
 package org.firstinspires.ftc.teamcode.teleops;
 
 import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.*;
-import static org.firstinspires.ftc.teamcode.Constants.dashboard;
-import static org.firstinspires.ftc.teamcode.Constants.hm;
-import static org.firstinspires.ftc.teamcode.Constants.tele;
+import static org.firstinspires.ftc.teamcode.Constants.*;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.Commands.DriveContinous;
 import org.firstinspires.ftc.teamcode.Commands.VisionDetection;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.firstinspires.ftc.teamcode.vision.VisionProcessor;
+import org.firstinspires.ftc.teamcode.vision.CameraParams;
 
 @TeleOp(name = "VisionOnly", group = "ScrapHeads")
 public class VisionOnly extends CommandOpMode {
-    // Create all subsystems references
-    GamepadEx driver = null;
+    private GamepadEx driver;
+    private Vision vision;
+    private Drivetrain drivetrain;
+    private VisionProcessor processor;
 
-    Vision vision = null;
+    private final Pose2d startPose = new Pose2d(0, 0, 0);
 
     @Override
     public void initialize() {
-        // Initializing the hardware map for motors, telemetry, and dashboard
+        // Init constants
         hm = hardwareMap;
         tele = telemetry;
         dashboard = FtcDashboard.getInstance();
 
-        // Initialize the first controller
-        // Can only have one active DRIVETRAIN controller at once
         driver = new GamepadEx(gamepad1);
 
-        vision = new Vision();
+        // Create drivetrain + vision subsystem
+        drivetrain = new Drivetrain(hm, startPose);
+        vision = new Vision(drivetrain);
         vision.register();
 
-        // Calling assignControls to set input commands
+        // Create processor using Constants
+        processor = new VisionProcessor(new CameraParams(
+                CAMERA_FORWARD_OFFSET,
+                CAMERA_LATERAL_OFFSET,
+                CAMERA_VERTICAL_OFFSET,
+                CAMERA_YAW_OFFSET
+        ));
+
         assignControls();
     }
 
     public void assignControls() {
+        // Run passive vision detection (pose correction ON)
         driver.getGamepadButton(A)
-                .whenPressed(new VisionDetection(vision));
+                .whenPressed(new VisionDetection(vision, processor, drivetrain, true));
+
+        // Toggle pose correction ON/OFF globally
+        driver.getGamepadButton(GamepadKeys.Button.X)
+                .whenPressed(() -> {
+                    ENABLE_POSE_CORRECTION = !ENABLE_POSE_CORRECTION;
+                    tele.addData("PoseCorrection", ENABLE_POSE_CORRECTION ? "ENABLED" : "DISABLED");
+                    tele.update();
+                });
     }
 }
