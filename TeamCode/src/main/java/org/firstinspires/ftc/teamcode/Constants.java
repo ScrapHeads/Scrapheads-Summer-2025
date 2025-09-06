@@ -15,7 +15,6 @@ public class Constants {
     public static Telemetry tele;
     public static FtcDashboard dashboard;
 
-
     // --------------------------
     // Vision system toggles
     // --------------------------
@@ -23,9 +22,9 @@ public class Constants {
     // --------------------------
     // Camera setup (mounting)
     // --------------------------
-    public static double CAMERA_FORWARD_OFFSET = 6.0;  // inches from robot center forward
+    public static double CAMERA_FORWARD_OFFSET = 0.0;  // inches from robot center forward
     public static double CAMERA_LATERAL_OFFSET = 0.0;  // inches from robot center left (+)
-    public static double CAMERA_VERTICAL_OFFSET = 8.0; // inches from floor
+    public static double CAMERA_VERTICAL_OFFSET = 0.0; // inches from floor
     public static double CAMERA_YAW_OFFSET = 0.0;      // radians yaw relative to robot
 
     // --------------------------
