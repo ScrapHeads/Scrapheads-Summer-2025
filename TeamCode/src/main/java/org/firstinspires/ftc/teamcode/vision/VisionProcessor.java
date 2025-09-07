@@ -3,26 +3,42 @@ package org.firstinspires.ftc.teamcode.vision;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.Rotation2d;
-
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 
 import static org.firstinspires.ftc.teamcode.Constants.*;
 
+/**
+ * Processes HuskyLens vision data to estimate robot pose.
+ * <p>
+ * This class provides utility methods to convert detected HuskyLens blocks
+ * (representing tags or objects) into approximate robot-relative poses.
+ * It accounts for camera mounting offsets, field of view, and robot motion
+ * latency when used alongside Road Runner localization.
+ */
 public class VisionProcessor {
+
     private double cameraForwardOffset;
     private double cameraLeftOffset;
     private double cameraHeight;
     private double cameraHeadingOffset;
 
-    // Calibration factors (tune on the robot!)
+    // Calibration constants (must be tuned on the actual robot)
     private double distanceConstant = DISTANCE_CONSTANT;
     private double leftScaling = LEFT_SCALING;
 
     private static final int IMAGE_WIDTH = Constants.IMAGE_WIDTH;
     private static final double CAMERA_HORIZONTAL_FOV = Constants.CAMERA_HORIZONTAL_FOV;
 
+    /**
+     * Creates a VisionProcessor with explicit camera mounting parameters.
+     *
+     * @param forward  forward offset of the camera from the robot center (inches)
+     * @param left     lateral offset of the camera from the robot center (inches)
+     * @param height   vertical offset of the camera from the ground (inches)
+     * @param heading  yaw offset of the camera relative to the robot heading (radians)
+     */
     public VisionProcessor(double forward, double left, double height, double heading) {
         this.cameraForwardOffset = forward;
         this.cameraLeftOffset = left;
@@ -30,11 +46,26 @@ public class VisionProcessor {
         this.cameraHeadingOffset = heading;
     }
 
+    /**
+     * Creates a VisionProcessor using a {@link CameraParams} struct.
+     *
+     * @param params camera offset parameters (forward, lateral, vertical, yaw)
+     */
     public VisionProcessor(CameraParams params) {
         this(params.forwardOffset, params.lateralOffset, params.verticalOffset, params.yawOffset);
     }
 
-    /** Converts a HuskyLens block into a robot-relative Pose2d (approx). */
+    /**
+     * Converts a HuskyLens block into an approximate robot-relative pose.
+     * <p>
+     * This uses the block size to estimate forward distance, the block x-position
+     * to estimate lateral offset, and derives heading based on horizontal offset
+     * relative to the camera's field of view. Camera mounting offsets are applied.
+     *
+     * @param block HuskyLens block containing detection data
+     * @return a Pose2d estimate of the detected object relative to the robot,
+     *         or null if input is invalid
+     */
     public Pose2d blockToRobotPose(HuskyLens.Block block) {
         if (block == null) return null;
 
@@ -43,7 +74,7 @@ public class VisionProcessor {
         if (avgSize <= 0) return null; // avoid div by zero
         double tagForward = distanceConstant / avgSize;
 
-        // 2) Estimate left offset (+Y) from horizontal pixel position
+        // 2) Estimate lateral offset (+Y) from horizontal pixel position
         double normalizedX = (block.x - (IMAGE_WIDTH / 2.0)) / (IMAGE_WIDTH / 2.0);
         double tagLeft = normalizedX * leftScaling;
 
@@ -60,7 +91,18 @@ public class VisionProcessor {
         return new Pose2d(visionPos.plus(offset), finalHeading);
     }
 
-    /** Returns corrected robot pose using HuskyLens vision, compensating for motion latency. */
+    /**
+     * Produces a corrected robot pose using HuskyLens vision,
+     * compensating for robot motion during image capture.
+     * <p>
+     * This method compares the drivetrain's estimated pose before and after
+     * the image was processed, then adjusts the vision-based estimate to
+     * account for any movement that occurred during that interval.
+     *
+     * @param drivetrain drivetrain used for localization
+     * @param block      HuskyLens block containing detection data
+     * @return a corrected Pose2d of the robot, or null if vision data is invalid
+     */
     public Pose2d getCorrectedRobotPoseFromTag(Drivetrain drivetrain, HuskyLens.Block block) {
         if (block == null) return null;
 

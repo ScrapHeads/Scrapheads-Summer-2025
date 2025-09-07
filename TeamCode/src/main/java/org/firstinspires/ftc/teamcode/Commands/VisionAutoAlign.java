@@ -13,11 +13,30 @@ import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.vision.AutoAlignConfig;
 
+/**
+ * Command that automatically aligns the robot to a HuskyLens-detected tag.
+ * <p>
+ * - If the driver provides stick input, driver control takes priority.
+ * - If no tag is seen, the robot stops.
+ * - If a tag is seen but not aligned, proportional control is applied using
+ *   gains and tolerances from {@link AutoAlignConfig}.
+ * - When aligned, the drivetrain is commanded to hold position.
+ * <p>
+ * Telemetry is published both to the Driver Hub and the FTC Dashboard.
+ */
 public class VisionAutoAlign extends CommandBase {
+
     private final Vision vision;
     private final Drivetrain drivetrain;
     private final GamepadEx driver;
 
+    /**
+     * Creates a new VisionAutoAlign command.
+     *
+     * @param vision     the Vision subsystem for HuskyLens integration
+     * @param drivetrain the drivetrain subsystem used to apply drive powers
+     * @param driver     the driver gamepad (used to override auto-align if active)
+     */
     public VisionAutoAlign(Vision vision, Drivetrain drivetrain, GamepadEx driver) {
         this.vision = vision;
         this.drivetrain = drivetrain;
@@ -26,16 +45,26 @@ public class VisionAutoAlign extends CommandBase {
         addRequirements(vision, drivetrain);
     }
 
+    /**
+     * Runs every scheduler cycle:
+     * <ul>
+     *   <li>Checks driver input - if active, driver control overrides auto-align.</li>
+     *   <li>Reads HuskyLens blocks - if no valid tag, stops the robot.</li>
+     *   <li>Finds the first valid tracked tag - checks size threshold.</li>
+     *   <li>Computes pixel error vs target alignment point.</li>
+     *   <li>Applies proportional strafe/forward/turn correction if not within tolerance.</li>
+     * </ul>
+     */
     @Override
     public void execute() {
         HuskyLens.Block[] blocks = vision.detectObject();
 
-        // Driver input (sticks)
-        double driverForward = -driver.getLeftY();  // forward/back
-        double driverStrafe  = driver.getLeftX();   // strafe
-        double driverTurn    = driver.getRightX();  // turn
+        // Driver input
+        double driverForward = -driver.getLeftY();
+        double driverStrafe  = driver.getLeftX();
+        double driverTurn    = driver.getRightX();
 
-        // If driver is actively moving, skip auto-align
+        // If driver is moving, skip auto-align
         boolean driverActive = Math.abs(driverForward) > 0.05 ||
                 Math.abs(driverStrafe) > 0.05 ||
                 Math.abs(driverTurn) > 0.05;
@@ -49,7 +78,7 @@ public class VisionAutoAlign extends CommandBase {
             return;
         }
 
-        // No tag? Stop robot
+        // If no tags, stop
         if (blocks.length == 0) {
             drivetrain.setDrivePowers(new PoseVelocity2d(new Vector2d(0, 0), 0));
             sendTelemetry(false, false, false);
@@ -59,17 +88,18 @@ public class VisionAutoAlign extends CommandBase {
         HuskyLens.Block block = blocks[0];
         AutoAlignConfig config = Constants.TAG_CONFIGS.get(block.id);
 
+        // If tag not configured or too small, stop
         if (config == null || Math.min(block.width, block.height) < config.minWidth) {
             drivetrain.setDrivePowers(new PoseVelocity2d(new Vector2d(0, 0), 0));
             sendTelemetry(true, false, false);
             return;
         }
 
-        // Pixel error from desired target position
+        // Pixel error relative to desired target position
         double errorX = block.x - config.targetX;
         double errorY = block.y - config.targetY;
 
-        // Check if we're within tolerance (per axis)
+        // Check tolerance
         boolean aligned = Math.abs(errorX) < config.toleranceX &&
                 Math.abs(errorY) < config.toleranceY;
 
@@ -79,12 +109,11 @@ public class VisionAutoAlign extends CommandBase {
             return;
         }
 
-        // Proportional control
+        // Proportional correction
         double strafeCmd  = errorX * config.kP_strafe;
         double forwardCmd = (config.targetY - block.y) * config.kP_forward;
         double turnCmd    = errorX * config.kP_heading;
 
-        // Apply correction
         drivetrain.setDrivePowers(new PoseVelocity2d(
                 new Vector2d(forwardCmd, strafeCmd),
                 turnCmd
@@ -93,15 +122,22 @@ public class VisionAutoAlign extends CommandBase {
         sendTelemetry(true, true, false);
     }
 
+    /**
+     * Sends both Driver Hub telemetry and FTC Dashboard telemetry.
+     *
+     * @param tagSeen   true if a tag is detected
+     * @param aligning  true if robot is actively aligning
+     * @param aligned   true if robot is within alignment tolerance
+     */
     private void sendTelemetry(boolean tagSeen, boolean aligning, boolean aligned) {
-        // Driver Hub telemetry
+        // Driver Hub
         Constants.tele.addData("AutoAlign", Constants.AUTO_ALIGN_ENABLED ? "ON" : "OFF");
         Constants.tele.addData("Tag Detected", tagSeen ? "YES" : "NO");
         Constants.tele.addData("Aligning", aligning ? "YES" : "NO");
         Constants.tele.addData("Aligned", aligned ? "YES" : "NO");
         Constants.tele.update();
 
-        // Dashboard telemetry
+        // Dashboard
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("AutoAlign", Constants.AUTO_ALIGN_ENABLED ? "ON" : "OFF");
         packet.put("Tag Detected", tagSeen ? "YES" : "NO");
@@ -110,11 +146,19 @@ public class VisionAutoAlign extends CommandBase {
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }
 
+    /**
+     * Runs until explicitly canceled (never finishes on its own).
+     */
     @Override
     public boolean isFinished() {
-        return false; // stays active until canceled/toggled off
+        return false;
     }
 
+    /**
+     * Stops the drivetrain when the command ends.
+     *
+     * @param interrupted true if canceled/interrupted
+     */
     @Override
     public void end(boolean interrupted) {
         drivetrain.setDrivePowers(new PoseVelocity2d(new Vector2d(0, 0), 0));

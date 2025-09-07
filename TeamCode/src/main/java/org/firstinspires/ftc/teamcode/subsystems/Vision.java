@@ -12,17 +12,34 @@ import org.firstinspires.ftc.robotcore.internal.system.Deadline;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Vision subsystem for HuskyLens integration.
+ * <p>
+ * This subsystem manages:
+ * <ul>
+ *   <li>Communication with the HuskyLens sensor.</li>
+ *   <li>Conversion of detected blocks into corrected robot poses using {@link VisionProcessor}.</li>
+ *   <li>Rate-limited periodic updates to prevent overloading the I2C bus.</li>
+ *   <li>Exposing the latest corrected pose to other commands and subsystems.</li>
+ * </ul>
+ */
 public class Vision implements Subsystem {
+
     private final HuskyLens huskyLens;
     private final VisionProcessor processor;
     private Pose2d latestPose = null;
 
-    // Rate limiting
-    private final int READ_PERIOD = 1; // seconds
+    // Rate limiting for sensor reads
+    private static final int READ_PERIOD = 1; // seconds
     private final Deadline rateLimit = new Deadline(READ_PERIOD, TimeUnit.SECONDS);
 
     private final Drivetrain drivetrain;
 
+    /**
+     * Creates a Vision subsystem with HuskyLens and camera calibration parameters.
+     *
+     * @param drivetrain drivetrain reference used for motion compensation in vision correction
+     */
     public Vision(Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
         huskyLens = hm.get(HuskyLens.class, "huskylens");
@@ -36,6 +53,7 @@ public class Vision implements Subsystem {
 
         rateLimit.expire();
 
+        // Report connection status
         TelemetryPacket packet = new TelemetryPacket();
         if (!huskyLens.knock()) {
             packet.put("Vision", "Problem communicating with " + huskyLens.getDeviceName());
@@ -47,6 +65,13 @@ public class Vision implements Subsystem {
         huskyLens.selectAlgorithm(HuskyLens.Algorithm.TAG_RECOGNITION);
     }
 
+    /**
+     * Called periodically by the scheduler.
+     * <p>
+     * Performs a rate-limited HuskyLens read, filters blocks by tracked tag IDs
+     * and minimum pixel size, and computes corrected poses using the vision processor.
+     * Updates {@code latestPose} if a valid correction is available.
+     */
     @Override
     public void periodic() {
         if (!rateLimit.hasExpired()) return;
@@ -78,16 +103,29 @@ public class Vision implements Subsystem {
         dashboard.sendTelemetryPacket(packet);
     }
 
+    /**
+     * Manually sets the latest pose estimate from an external source.
+     *
+     * @param pose the new pose to store
+     */
     public void setLatestPose(Pose2d pose) {
         this.latestPose = pose;
     }
 
-    /** Returns the last corrected pose, or null if none available */
+    /**
+     * Returns the most recently corrected pose.
+     *
+     * @return last corrected pose, or null if none available
+     */
     public Pose2d getLatestPose() {
         return latestPose;
     }
 
-    /** Returns raw blocks from HuskyLens */
+    /**
+     * Returns raw blocks reported by HuskyLens without correction or filtering.
+     *
+     * @return array of HuskyLens blocks
+     */
     public HuskyLens.Block[] detectObject() {
         return huskyLens.blocks();
     }

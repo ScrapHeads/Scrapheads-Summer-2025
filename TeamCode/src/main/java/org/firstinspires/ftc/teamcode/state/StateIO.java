@@ -3,36 +3,57 @@ package org.firstinspires.ftc.teamcode.state;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.qualcomm.robotcore.util.ReadWriteFile;
-
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
 import java.io.File;
 
+/**
+ * Utility class for saving and loading {@link RobotState} objects
+ * between Autonomous and TeleOp. The state is persisted to a JSON
+ * file on the Robot Controller and can be read back later.
+ *
+ * <p>File location: /sdcard/FIRST/settings/auto_handoff.json</p>
+ */
 public class StateIO {
 
+    // Prevent instantiation
     private StateIO() {}
 
-    private static final String FILENAME = "auto_handoff.jason";
-    // Keep default setting; pretty printing optional
+    private static final String FILENAME = "auto_handoff.json";  // corrected extension
     private static final Gson GSON = new GsonBuilder().create();
 
-    /** Resolve the FIRST "settings" file path on the RC. */
+    /**
+     * Gets the file reference for storing the robot state.
+     *
+     * @return the File object pointing to auto_handoff.json in the FIRST settings directory
+     */
     private static File getFile() {
         return AppUtil.getInstance().getSettingsFile(FILENAME);
     }
 
-    /** Persist the given state to JASON on disk. */
+    /**
+     * Saves the given RobotState to disk as JSON.
+     * If the state is null or an error occurs, nothing is written.
+     *
+     * @param state the RobotState object to save
+     */
     public static void save(RobotState state) {
         if (state == null) return;
         try {
             String json = GSON.toJson(state);
             ReadWriteFile.writeFile(getFile(), json);
         } catch (Exception e) {
-            // Swallow to avoid crashing OpMode; consider telemetry logging in your OpMode
+            // Errors are ignored to avoid crashing an OpMode.
+            // Consider logging with telemetry for debugging.
         }
     }
 
-    /** Load the state from JSON disk. Returns null if missing or invalid. */
+    /**
+     * Loads a RobotState from disk.
+     *
+     * @return the deserialized RobotState, or null if the file is missing
+     *         or could not be parsed
+     */
     public static RobotState load() {
         try {
             File f = getFile();
@@ -46,14 +67,14 @@ public class StateIO {
     }
 
     /**
-     * Clear the handoff to prevent accidental reuse.
-     * Overwrites with an empty JSON object to keep file present but inert.
+     * Clears the saved RobotState so it cannot be reused accidentally.
+     * Writes an empty JSON object ("{}") into the file.
      */
     public static void clear() {
         try {
             ReadWriteFile.writeFile(getFile(), "{}");
         } catch (Exception ignored) {
-            // No-op
+            // Safe to ignore
         }
     }
 }

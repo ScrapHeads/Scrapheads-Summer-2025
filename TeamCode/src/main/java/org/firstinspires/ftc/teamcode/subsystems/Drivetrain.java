@@ -58,8 +58,24 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Subsystem for controlling a mecanum drivetrain using Road Runner.
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Hardware initialization (motors, IMU, voltage sensor).</li>
+ *   <li>Localization using Road Runner localizer classes.</li>
+ *   <li>Trajectory following and turn actions via Road Runner {@link Action}.</li>
+ *   <li>Pose history logging and telemetry visualization on FTC Dashboard.</li>
+ *   <li>Provides default motion constraints and trajectory builders.</li>
+ * </ul>
+ */
 @Config
 public final class Drivetrain implements Subsystem {
+    /**
+     * Tunable parameters for kinematics, feedforward, path/turn profiles, and controller gains.
+     * Modify through FTC Dashboard during testing.
+     */
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
@@ -104,6 +120,7 @@ public final class Drivetrain implements Subsystem {
 
     public static Params PARAMS = new Params();
 
+    // Kinematics and constraints
     public final MecanumKinematics kinematics = new MecanumKinematics(
             PARAMS.inPerTick * PARAMS.trackWidthTicks, PARAMS.inPerTick / PARAMS.lateralInPerTick);
 
@@ -119,22 +136,26 @@ public final class Drivetrain implements Subsystem {
     public final AccelConstraint defaultAccelConstraint =
             new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
 
+    // Hardware references
     public final DcMotorEx leftFront, leftBack, rightBack, rightFront;
-
     public final VoltageSensor voltageSensor;
-
     public final LazyImu lazyImu;
 
+    // Localization
     public final Localizer localizer;
 
-
+    // Pose history for dashboard drawing
     private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
 
+    // Log writers
     private final DownsampledWriter estimatedPoseWriter = new DownsampledWriter("ESTIMATED_POSE", 50_000_000);
     private final DownsampledWriter targetPoseWriter = new DownsampledWriter("TARGET_POSE", 50_000_000);
     private final DownsampledWriter driveCommandWriter = new DownsampledWriter("DRIVE_COMMAND", 50_000_000);
     private final DownsampledWriter mecanumCommandWriter = new DownsampledWriter("MECANUM_COMMAND", 50_000_000);
 
+    /**
+     * Localizer implementation using drive wheel encoders and IMU.
+     */
     public class DriveLocalizer implements Localizer {
         public final Encoder leftFront, leftBack, rightBack, rightFront;
         public final IMU imu;
@@ -168,6 +189,11 @@ public final class Drivetrain implements Subsystem {
             return pose;
         }
 
+        /**
+         * Updates localization from encoder deltas and IMU heading.
+         *
+         * @return robot velocity estimate
+         */
         @Override
         public PoseVelocity2d update() {
             PositionVelocityPair leftFrontPosVel = leftFront.getPositionAndVelocity();
@@ -196,6 +222,8 @@ public final class Drivetrain implements Subsystem {
             }
 
             double headingDelta = heading.minus(lastHeading);
+
+            // Convert wheel encoder increments into robot twist
             Twist2dDual<Time> twist = kinematics.forward(new MecanumKinematics.WheelIncrements<>(
                     new DualNum<Time>(new double[]{
                             (leftFrontPosVel.position - lastLeftFrontPos),
@@ -215,6 +243,7 @@ public final class Drivetrain implements Subsystem {
                     }).times(PARAMS.inPerTick)
             ));
 
+            // Update last measurements
             lastLeftFrontPos = leftFrontPosVel.position;
             lastLeftBackPos = leftBackPosVel.position;
             lastRightBackPos = rightBackPosVel.position;
@@ -231,6 +260,12 @@ public final class Drivetrain implements Subsystem {
         }
     }
 
+    /**
+     * Creates a new drivetrain subsystem.
+     *
+     * @param hardwareMap FTC hardware map
+     * @param pose        initial starting pose estimate
+     */
     public Drivetrain(HardwareMap hardwareMap, Pose2d pose) {
         LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
@@ -266,6 +301,11 @@ public final class Drivetrain implements Subsystem {
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
 
+    /**
+     * Applies normalized drive powers to motors.
+     *
+     * @param powers desired velocity in robot frame
+     */
     public void setDrivePowers(PoseVelocity2d powers) {
         MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
                 PoseVelocity2dDual.constant(powers, 1));
@@ -281,6 +321,9 @@ public final class Drivetrain implements Subsystem {
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
+    /**
+     * Road Runner Action for following a time-parameterized trajectory.
+     */
     public final class FollowTrajectoryAction implements Action {
         public final TimeTrajectory timeTrajectory;
         private double beginTs = -1;
@@ -385,6 +428,9 @@ public final class Drivetrain implements Subsystem {
         }
     }
 
+    /**
+     * Road Runner Action for performing a timed turn.
+     */
     public final class TurnAction implements Action {
         private final TimeTurn turn;
 
@@ -464,6 +510,11 @@ public final class Drivetrain implements Subsystem {
         }
     }
 
+    /**
+     * Updates the pose estimate and records it to history/log.
+     *
+     * @return current velocity estimate
+     */
     public PoseVelocity2d updatePoseEstimate() {
         PoseVelocity2d vel = localizer.update();
         poseHistory.add(localizer.getPose());
@@ -477,6 +528,9 @@ public final class Drivetrain implements Subsystem {
         return vel;
     }
 
+    /**
+     * Draws the robot's pose history on the dashboard field overlay.
+     */
     private void drawPoseHistory(Canvas c) {
         double[] xPoints = new double[poseHistory.size()];
         double[] yPoints = new double[poseHistory.size()];
@@ -494,6 +548,12 @@ public final class Drivetrain implements Subsystem {
         c.strokePolyline(xPoints, yPoints);
     }
 
+    /**
+     * Builds a trajectory action starting from a given pose using drivetrain defaults.
+     *
+     * @param beginPose the starting pose of the trajectory
+     * @return a new {@link TrajectoryActionBuilder} with default tolerances and constraints
+     */
     public TrajectoryActionBuilder actionBuilder(Pose2d beginPose) {
         return new TrajectoryActionBuilder(
                 TurnAction::new,
@@ -510,6 +570,16 @@ public final class Drivetrain implements Subsystem {
         );
     }
 
+
+    /**
+     * Builds a trajectory action starting from a given pose with custom tolerances.
+     *
+     * @param beginPose  the starting pose of the trajectory
+     * @param posTol     position tolerance (inches)
+     * @param headingTol heading tolerance (radians)
+     * @param velTol     velocity tolerance (inches/sec or rad/sec)
+     * @return a new {@link TrajectoryActionBuilder} with default constraints and custom tolerances
+     */
     public TrajectoryActionBuilder actionBuilder(
             Pose2d beginPose,
             double posTol, double headingTol, double velTol
@@ -527,6 +597,16 @@ public final class Drivetrain implements Subsystem {
         );
     }
 
+    /**
+     * Builds a trajectory action starting from a given pose with custom motion constraints
+     * but default tolerances.
+     *
+     * @param beginPose       the starting pose of the trajectory
+     * @param turnConstraints constraints on angular velocity and acceleration
+     * @param velConstraints  linear velocity constraint
+     * @param accelConstraint linear acceleration constraint
+     * @return a new {@link TrajectoryActionBuilder} with custom constraints and default tolerances
+     */
     public TrajectoryActionBuilder actionBuilder(Pose2d beginPose, TurnConstraints turnConstraints, VelConstraint velConstraints, AccelConstraint accelConstraint) {
         return new TrajectoryActionBuilder(
                 TurnAction::new,
@@ -543,6 +623,18 @@ public final class Drivetrain implements Subsystem {
         );
     }
 
+    /**
+     * Builds a trajectory action starting from a given pose with full custom constraints and tolerances.
+     *
+     * @param beginPose       the starting pose of the trajectory
+     * @param turnConstraints constraints on angular velocity and acceleration
+     * @param velConstraints  linear velocity constraint
+     * @param accelConstraint linear acceleration constraint
+     * @param posTol          position tolerance (inches)
+     * @param headingTol      heading tolerance (radians)
+     * @param velTol          velocity tolerance (inches/sec or rad/sec)
+     * @return a new {@link TrajectoryActionBuilder} with full custom parameters
+     */
     public TrajectoryActionBuilder actionBuilder(
             Pose2d beginPose,
             TurnConstraints turnConstraints,
@@ -563,6 +655,9 @@ public final class Drivetrain implements Subsystem {
         );
     }
 
+    /**
+     * Periodically updates localization and sends telemetry to dashboard.
+     */
     @Override
     public void periodic() {
         PoseVelocity2d vel = updatePoseEstimate();
