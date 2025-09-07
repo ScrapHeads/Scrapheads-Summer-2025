@@ -21,6 +21,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Commands.AutoPathCommands.DynamicSplineCommand;
 import org.firstinspires.ftc.teamcode.Commands.AutoPathCommands.DynamicStrafeCommand;
 import org.firstinspires.ftc.teamcode.auto.paths.mockAutoBlueFar;
+import org.firstinspires.ftc.teamcode.state.RobotState;
+import org.firstinspires.ftc.teamcode.state.StateIO;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
 import java.util.Arrays;
@@ -52,9 +54,7 @@ public class MockAutoBlueFar extends CommandOpMode {
 
         waitForStart();
 
-        // Run a sequence of movements dynamically using live pose grabbing
-        schedule(new SequentialCommandGroup(
-                // Move to position 1 using defaults
+        SequentialCommandGroup followPath = new SequentialCommandGroup(
                 new DynamicStrafeCommand(drivetrain, () -> path.get(1)),
                 new WaitCommand(3000),
                 new DynamicStrafeCommand(drivetrain, () -> path.get(2)),
@@ -69,6 +69,45 @@ public class MockAutoBlueFar extends CommandOpMode {
                 new DynamicStrafeCommand(drivetrain, () -> path.get(9)),
                 new DynamicStrafeCommand(drivetrain, () -> path.get(10)),
                 new WaitCommand(3000)
+        ) {
+            @Override
+            public void end(boolean interrupted) {
+                // Stop motors
+
+                // Write the Auto -> teleop handoff
+                writeAutoHandoff();
+
+                // telemetry/logging
+                tele.addData("Auto ended", interrupted ? "interrupted" : "finished");
+                tele.update();
+            }
+        };
+
+        // Run a sequence of movements dynamically using live pose grabbing
+        schedule(new SequentialCommandGroup(
+
         ));
+    }
+
+    private void writeAutoHandoff() {
+        try {
+            // Update the pose of the robot
+            drivetrain.updatePoseEstimate();
+
+            // Get the updated robot pose
+            Pose2d pose = drivetrain.localizer.getPose();
+            boolean isBlue = true;
+
+            // Create a new RobotState class
+            RobotState rs = new RobotState(pose, isBlue);
+
+            // Save the RobotState class to the json file
+            StateIO.save(rs);
+
+        } catch (Exception e) {
+            // Keep Auto safe-avoid throwing out of end(); add a log
+            tele.addData("Handoff write error", e.getMessage());
+            tele.update();
+        }
     }
 }
