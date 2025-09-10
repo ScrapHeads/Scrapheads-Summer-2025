@@ -16,8 +16,7 @@ import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Commands.AutoPathCommands.DynamicStrafeCommand;
-import org.firstinspires.ftc.teamcode.auto.paths.TestPath;
-import org.firstinspires.ftc.teamcode.auto.paths.TrevorPath;
+import org.firstinspires.ftc.teamcode.auto.paths.*;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -30,7 +29,7 @@ public class MoveForward extends CommandOpMode {
 
     Drivetrain drivetrain;
 
-    public static final List<Pose2d> testPath = TrevorPath.PATH;
+    public static final List<Pose2d> testPath = MoveForwardPath.PATH;
 
     @Override
     public void initialize() {
@@ -54,12 +53,7 @@ public class MoveForward extends CommandOpMode {
         // Run a sequence of movements dynamically using live pose grabbing
         schedule(new SequentialCommandGroup(
                 // Move to position 1 using defaults
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(1)),
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(2)),
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(3)),
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(4)),
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(5)),
-                new DynamicStrafeCommand(drivetrain, () -> testPath.get(6))
+                new DynamicStrafeCommand(drivetrain, () -> testPath.get(1))
         ));
     }
 }

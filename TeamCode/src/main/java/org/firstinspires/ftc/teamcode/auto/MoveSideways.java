@@ -6,84 +6,54 @@ import static org.firstinspires.ftc.teamcode.Constants.tele;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.AccelConstraint;
-import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.AngularVelConstraint;
 import com.acmerobotics.roadrunner.MinVelConstraint;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.ProfileAccelConstraint;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.TurnConstraints;
 import com.acmerobotics.roadrunner.VelConstraint;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
-import com.arcrobotics.ftclib.gamepad.GamepadEx;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.Commands.FollowDrivePath;
+import org.firstinspires.ftc.teamcode.Commands.AutoPathCommands.DynamicStrafeCommand;
+import org.firstinspires.ftc.teamcode.auto.paths.*;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
-import java.util.ArrayList;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
 import java.util.Arrays;
 import java.util.List;
 
 @Autonomous(name = "MoveSideways", group = "ScrapHeads")
 public class MoveSideways extends CommandOpMode {
-    // Create all subsystems references
-    GamepadEx driver = null;
 
-    Drivetrain drivetrain = null;
+    Drivetrain drivetrain;
 
-    // Create a list of the target positions that we want the robot to go to: call in order
-    List<Pose2d> positions = Arrays.asList(
-            new Pose2d(0, 0, 0),
-            new Pose2d(0, 10, Math.toRadians(0)),
-            new Pose2d(0, 0, Math.toRadians(0))
-    );
-
-    // Create a list of completed paths: call in order
-    List<Action> path = new ArrayList<>();
+    public static final List<Pose2d> testPath = MoveSidewaysPath.PATH;
 
     @Override
     public void initialize() {
-        // Initializing the hardware map for motors, telemetry, and dashboard
+        // Init hardware + dashboard
         hm = hardwareMap;
         tele = telemetry;
         dashboard = FtcDashboard.getInstance();
 
-        // Initialize the subsystems declared at the top of the code
-        // Update startingPose to set the correct starting position on the filed
-        drivetrain = new Drivetrain(hm, positions.get(0));
+        drivetrain = new Drivetrain(hm, testPath.get(0));
         drivetrain.register();
 
-        // Values used to tune the speed and accuracy of path ovoid when possible
-        TurnConstraints turnConstraintsFast = new TurnConstraints(Math.PI, -Math.PI, Math.PI);
+        // Custom constraints for some moves
+        TurnConstraints turnConstraintsFast = new TurnConstraints(4, -4, 4);
         VelConstraint velConstraintFast = new MinVelConstraint(Arrays.asList(
                 drivetrain.kinematics.new WheelVelConstraint(80),
                 new AngularVelConstraint(Math.PI)));
         AccelConstraint accelConstraintFast = new ProfileAccelConstraint(-40, 80);
 
-//        TrajectoryActionBuilder turn = drivetrain.actionBuilder(positions.get(0))
-//                .turn(Math.toRadians(180));
-//        path.add(turn.build());
+        waitForStart();
 
-        TrajectoryActionBuilder driveForward = drivetrain.actionBuilder(positions.get(0))
-                .strafeToLinearHeading(positions.get(1).position, positions.get(1).heading);
-        path.add(driveForward.build());
-
-//        TrajectoryActionBuilder driveSideWays = drivetrain.actionBuilder(positions.get(1))
-//                .strafeToLinearHeading(positions.get(2).position, positions.get(2).heading);
-//        path.add(driveSideWays.build());
-
-        followPath();
-    }
-
-    public void followPath() {
+        // Run a sequence of movements dynamically using live pose grabbing
         schedule(new SequentialCommandGroup(
-                new FollowDrivePath(drivetrain, path.get(0))
-
-//                new FollowDrivePath(drivetrain, path.get(1))
+                // Move to position 1 using defaults
+                new DynamicStrafeCommand(drivetrain, () -> testPath.get(1))
         ));
     }
-
-
 }

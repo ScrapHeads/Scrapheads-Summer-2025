@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.state.RobotState;
 import org.firstinspires.ftc.teamcode.state.StateIO;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
-@TeleOp(name = "DriveOnly", group = "ScrapHeads")
+@TeleOp(name = "DriveWithAutoWrite", group = "ScrapHeads")
 public class DriveWithAutoWrite extends CommandOpMode {
     // Create all subsystems references
     GamepadEx driver = null;
