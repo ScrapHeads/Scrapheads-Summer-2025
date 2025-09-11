@@ -19,7 +19,7 @@ import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.Commands.FollowDrivePath;
+import org.firstinspires.ftc.teamcode.Commands.drive.FollowDrivePath;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 
 import java.util.ArrayList;
