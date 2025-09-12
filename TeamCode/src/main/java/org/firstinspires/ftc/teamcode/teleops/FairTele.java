@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.teleops;
 
 import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.A;
 import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.B;
+import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.LEFT_BUMPER;
+import static com.arcrobotics.ftclib.gamepad.GamepadKeys.Button.RIGHT_BUMPER;
 import static org.firstinspires.ftc.teamcode.Constants.*;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -58,11 +60,19 @@ public class FairTele extends CommandOpMode {
     public void assignControls() {
         drivetrain.setDefaultCommand(new DriveContinous(drivetrain, driver, 1));
 
-        new Trigger(() -> driver.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.1)
+//        new Trigger(() -> driver.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+//                .whenActive(new LiftArm(armLift, 1))
+//                .whenInactive(new LiftArm(armLift, 0));
+//
+//        new Trigger(() -> driver.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.1)
+//                .whenActive(new LiftArm(armLift, -1))
+//                .whenInactive(new LiftArm(armLift, 0));
+
+        driver.getGamepadButton(RIGHT_BUMPER)
                 .whenActive(new LiftArm(armLift, 1))
                 .whenInactive(new LiftArm(armLift, 0));
 
-        new Trigger(() -> driver.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.1)
+        driver.getGamepadButton(LEFT_BUMPER)
                 .whenActive(new LiftArm(armLift, -1))
                 .whenInactive(new LiftArm(armLift, 0));
 
