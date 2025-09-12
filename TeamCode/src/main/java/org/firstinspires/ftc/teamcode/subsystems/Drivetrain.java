@@ -88,13 +88,13 @@ public final class Drivetrain implements Subsystem {
 
         // drive model parameters
         public double inPerTick = 0.0019758748077;
-        public double lateralInPerTick = 0.001780265798028222;
-        public double trackWidthTicks = 6568.141653045166;
+        public double lateralInPerTick = 0.0016616430034894932;
+        public double trackWidthTicks = 6715.490772208431;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.8236622166065146;
-        public double kV =  0.0002892898543616122;
-        public double kA = .000078;
+        public double kS = 0.613623116554447;
+        public double kV =  0.0003008605161912415;
+        public double kA = 0.00004;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 60;
@@ -287,8 +287,8 @@ public final class Drivetrain implements Subsystem {
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // TODO: reverse motor directions if needed
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
