@@ -88,13 +88,13 @@ public final class Drivetrain implements Subsystem {
 
         // drive model parameters
         public double inPerTick = 0.0019758748077;
-        public double lateralInPerTick = 0.0016616430034894932;
-        public double trackWidthTicks = 6715.490772208431;
+        public double lateralInPerTick = 0.0016497467248996012;
+        public double trackWidthTicks = 6839.452740668602;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.613623116554447;
-        public double kV =  0.0003008605161912415;
-        public double kA = 0.00004;
+        public double kS = 0.5835280789731487;
+        public double kV =  0.0002965484947801144;
+        public double kA = 0.00003;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 60;
@@ -106,13 +106,13 @@ public final class Drivetrain implements Subsystem {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 8.8;
-        public double lateralGain = 17.0;
-        public double headingGain = 5.0; // shared with turn
+        public double axialGain = 5;
+        public double lateralGain = 5;
+        public double headingGain = 5; // shared with turn
 
-        public double axialVelGain = 0.345;
-        public double lateralVelGain = 0.3;
-        public double headingVelGain = 0.0; // shared with turn
+        public double axialVelGain = 0.5;
+        public double lateralVelGain = 0.5;
+        public double headingVelGain = 0.5; // shared with turn
 
         public double defaultPosTolerance = .1;
         public double defaultHeadingTolerance = Math.toRadians(2);
